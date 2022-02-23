@@ -1,0 +1,25 @@
+name: ringdb
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - arviz
+  - astropy
+  - corner
+  - h5py
+  - ipython
+  - jupyterlab
+  - lalsuite
+  - matplotlib
+  - numpy
+  - pandas
+  - pip
+  - pystan=2
+  - python=3
+  - scipy
+  - seaborn
+  - numexpr
+  - qnm
+  - parse
+  - wget
+  - ringdown
