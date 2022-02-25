@@ -16,21 +16,22 @@ approximant_order = ["IMRPhenomPv2",
 "SEOBNRv",
 "NRSur7dq4"]
 
-default_schema = {'samples' : {'type': 'array', 'path': '{approximant}/posterior_samples'},}
+default_schema = {'samples' : {'type': 'array', 'path': '{approximant}/posterior_samples'},
+		  'psd': {'type': 'array', 'path': '{approximant}/psd/{detector}'}}
 
 
 import lalsimulation as ls
 import h5py
 
 class PosteriorDatabase:
-    def __init__(self, folder, url_df, schema=default_schema, approximant_order=approximant_order, cosmo=True):
+    def __init__(self, folder, url_df, psd_url_df, strain_url_df, schema=default_schema, approximant_order=approximant_order, cosmo=True):
         self.url_df = url_df
-        if folder[-1] == '/':
-            folder = folder[:-1]
         self._folder = folder
         self.schema = schema
         self.approximant_order = approximant_order
         self.cosmo = cosmo
+        self.psd_url_df = psd_url_df
+        self.strain_url_df = strain_url_df
 
     @property
     def folder(self):
@@ -38,10 +39,12 @@ class PosteriorDatabase:
 
     @folder.setter
     def folder(self, folder):
+        if folder[-1] == '/':
+            folder = folder[:-1]
         self._folder = folder
         
     def available_detectors(self, event):
-        return list(self.url_df[self.url_df.Event == event].Detector.unique())
+        return list(self.strain_url_df[self.strain_url_df.Event == event].Detector.unique())
     
     def event_path(self, event):
         if self.in_GWTC1(event):
@@ -63,7 +66,6 @@ class PosteriorDatabase:
         return is_in_the_catalog
     
     def event_exists(self, event):
-        #print(f"Checking if {self.event_path(event)} exists")
         return os.path.exists(self.event_path(event))
     
     def available_approximants(self, event):
@@ -105,10 +107,10 @@ class PosteriorDatabase:
         # Check to see if this file is a single event's file or does this compressed file hold multiple events?
         events = self.url_df[self.url_df.url == url].event.unique()
         
-        #if 'GW150914' in events:
-        #    print("Samples from GWTC-1 come in one file, and this package hasn't implemented")
-        #    print("a way to download only one particular event from GWTC-1.") 
-        #    print("So we have to download them together")
+        if 'GW150914' in events:
+            print("Samples from GWTC-1 come in one file, and this package hasn't implemented")
+            print("a way to download only one particular event from GWTC-1.") 
+            print("So we have to download them together")
         
         # Download the file
         thefile = File.from_url(url, self.folder, new_filename=f"{event}.{file_type}")
@@ -180,7 +182,49 @@ class PosteriorDatabase:
             df_posteriors_all['waveform_code'] = int(ls.IMRPhenomPv2)
         return df_posteriors_all
 
-    
+    def psd(self, event, detector=None):
+        # Return all detectors if none available
+        if detector is None:
+            detector = self.available_detectors(event)
+
+        # If the event is GWTC-1, there is a seperate PSD file that needs to be downloaded
+        if self.in_GWTC1(event):
+            url = self.psd_url_df.loc[self.psd_url_df.event == event, 'url'].values[0]
+            file_type = url.split('.')[-1]
+            filename = f"{event}_psd.{file_type}"
+            filepath = f"{self.folder}/{filename}"
+            if not os.path.exists(filepath):
+                # Download the psd file
+                thefile = File.from_url(url, self.folder, new_filename=filename)
+
+            psd_samples = pd.read_csv(filepath, delimiter='\t')
+            renaming = {'# Freq (Hz)': 'freq', 'LIGO_Hanford_PSD (1/Hz)': 'H1', 'LIGO_Livingston_PSD (1/Hz)': 'L1'}
+            if isinstance(detector, list):
+                cols = ['freq'] + detector
+                psd_samples = psd_samples.rename(renaming, axis=1)[cols]
+                psd_dict = {ifo: ringdown.PowerSpectrum(psd_samples[ifo].values, index=psd_samples['freq'].values) for ifo in detector}
+                return psd_dict
+            else:
+                cols = ['freq'] + [detector]
+                psd_samples = psd_samples.rename(renaming, axis=1)[cols]
+                psd = ringdown.PowerSpectrum(psd_samples[detector].values, index=psd_samples['freq'].values)
+                return psd
+        
+        # If the event is not in GWTC-1 then the samples are available in the posterior files.
+        # Download the file if it doesn't exist
+        if not self.event_exists(eventname):
+            self.download_file(eventname)
+        
+        if isinstance(detector, list):
+            psd_dict = {}
+            for ifo in detector:
+                psd_vals = self.read_data(event, 'psd', detector=ifo)
+                psd_dict = psd_dict.update({ifo: ringdown.PowerSpectrum(psd_vals[:,1], index=psd_vals[:,0])})
+            return psd_dict
+        else:
+            psd_vals = self.read_data(event, 'psd', detector=detector)
+            return ringdown.PowerSpectrum(psd_vals[:,1], index=psd_vals[:,0])
+
     @staticmethod
     def preprocess_path(path, replacement_dict):
         replacements = { ("{"+key+"}"): value for key,value in replacement_dict.items() }
@@ -203,7 +247,7 @@ class PosteriorDatabase:
     def read_data(self, event, data_name, approximant=None, detector=None):
         file = f"{self.folder}/{event}.hdf5"
         if approximant is None:
-            approximant = self.default_approximant(event)
+            approximant = self.choose_approximant(event)
         replacement_dict = {'event': event, 'approximant': approximant, 'detector':detector}
         with h5py.File(file, 'r') as f:
             scheme = self.schema[data_name]
