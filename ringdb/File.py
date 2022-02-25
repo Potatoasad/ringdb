@@ -15,7 +15,7 @@ class File:
         # Check if folder one step up exists:
         folder_up = save_folder.split('/')[-2]
         if folder_up != ".":
-            if not os.path.exists(folder):
+            if not os.path.exists(folder_up):
                 print(f"making folder {folder_up} since it doesn't exist")
                 subprocess.run(["mkdir", folder_up])
                 
@@ -31,9 +31,7 @@ class File:
     
     def extract_here(self):
         file_type = self.path.split('.')[-1]
-        print(file_type)
         folder = "/".join(self.path.split('/')[0:-1])
-        print(folder)
         if file_type == 'tar':
             subprocess.run(["tar","-xvf",self.path,"-C",folder])
         if file_type == 'zip':

@@ -1,3 +1,11 @@
+import os
+import subprocess
+import ringdown
+import pandas as pd
+import numpy as np
+import h5py
+from . import File
+
 default_schema = {'sample' : {'type': 'array', 'path': '{detector}/strain/Strain'},
                   't0': {'type': 'attribute', 'name': 'Xstart', 'path': '{detector}/strain/Strain'},
                   'dt': {'type': 'attribute', 'name': 'Xspacing', 'path': '{detector}/strain/Strain'},
@@ -9,16 +17,8 @@ class StrainDatabase:
         self.url_df = url_df
         if folder[-1] == '/':
             folder = folder[:-1]
-        self._folder = folder
+        self.folder = folder
         self.schema = schema
-
-    @property
-    def folder(self):
-        return self._folder
-
-    @folder.setter
-    def folder(self, folder):
-        self._folder = folder
         
     def available_detectors(self, event):
         return list(self.url_df[self.url_df.Event == event].Detector.unique())

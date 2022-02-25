@@ -1,3 +1,10 @@
+import os
+import subprocess
+import ringdown
+from . import File
+import pandas as pd
+import numpy as np
+
 approximant_order = ["IMRPhenomPv2",
 "IMRPhenomPv3",
 "IMRPhenomXPHM"
@@ -144,7 +151,7 @@ class PosteriorDatabase:
         # Return a file with the same 
         return File(f"{self.folder}/{filename}")
     
-    def dposteriors(self,eventname):
+    def posteriors(self,eventname):
         # Download the file if it doesn't exist
         if not self.event_exists(eventname):
             self.download_file(eventname)

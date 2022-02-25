@@ -18,9 +18,22 @@ from . import PosteriorDatabase
 
 folder_post = "./TestingNew/Data/PosteriorData"
 
+from . import metadb
 
-posterior_url_path = os.path.join(os.getcwd(), 'ringdb/metadb/posterior_urls.csv')
-strain_url_path = os.path.join(os.getcwd(), 'ringdb/metadb/strain_urls.csv')
+try:
+    import importlib.resources as pkg_resources
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`.
+    import importlib_resources as pkg_resources
+
+from . import metadb  # relative-import the *package* containing the templates
+
+posterior_url_path = pkg_resources.open_text(metadb, 'posterior_urls.csv')
+# or for a file-like stream:
+strain_url_path = pkg_resources.open_text(metadb, 'strain_urls.csv')
+
+#posterior_url_path = os.path.join(os.getcwd(), 'ringdb/metadb/posterior_urls.csv')
+#strain_url_path = os.path.join(os.getcwd(), 'ringdb/metadb/strain_urls.csv')
 
 posterior_url_df = pd.read_csv(posterior_url_path)
 strain_url_df = pd.read_csv(strain_url_path)
