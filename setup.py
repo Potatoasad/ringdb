@@ -30,6 +30,5 @@ setup(name='ringdb',
             'scipy',
             'seaborn',
             'gwosc',
-            'lalsimulation',
             'ringdown']
      )
