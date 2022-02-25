@@ -16,7 +16,7 @@ class StrainDatabase:
     def folder(self):
         return self._folder
 
-    @x.setter
+    @folder.setter
     def folder(self, folder):
         self._folder = folder
         
