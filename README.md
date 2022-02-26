@@ -2,17 +2,37 @@
 A gravitational event database that queries and locally saves event strain samples,  detector PSDs and posterior samples. - Not completely stable yet, fixing issues. 
 
 ## Usage:
-Define two folders, one to keep the Posteriors and PSDs and one to keep the strain files. Then initialise the `PosteriorDatabase` class and the `StrainDatabase` class
+### Initialize
+Set a folder in your computer somewhere where data will be saved (if the folder isn't there it will be created). Initialize a `Database` object. 
 ```python
-from ringdb import PosteriorDatabase, StrainDatabase, posterior_urls, strain_urls
+from ringdb import Database
 
-PD = PosteriorDatabase("/path/to/data/PosteriorDataFolder", posterior_urls)
-SD = StrainDatabase("/path/to/data/StrainDataFolder", strain_urls)
+# Sets up the database inside a folder called Data
+db = Database("./Data")
+db.initialize()
 ```
 
-Then you can call them using the two most important functions. The functions here will download all the requisite files if they need to be downloaded or just read them if the file already exists. 
-
+Get an object corresponding to a particular event, and query it for psds, posteriors or strain
 ```python
-strain_data = SD.get_strain("GW150914") #  Returns a dictionary of ringdown.Data objects indexed by the detector name
-posterior_data = PD.posteriors("GW150914") # Returns a dataframe of all the posterior samples
+first_event = db.event("GW150914")
+```
+
+### Query
+
+#### Get a PSD
+```python
+first_psd = first_event.psd() # Returns a dictionary labelled by detectors
+type(first_psd['H1']) # Ringdown.PowerSpectrum object
+```
+
+#### Get posteriors
+```python
+first_posteriors = first_event.posteriors() # Returns a pandas dataframe
+type(first_posteriors) # pandas DataFrame with all the posteriors
+```
+
+#### Get the strain files
+```python
+first_strain = first_event.strain() # Returns a dictionary labelled by detectors
+type(first_strain['L1']) # Ringdown.Data object
 ```
