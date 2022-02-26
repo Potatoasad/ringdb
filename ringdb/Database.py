@@ -54,7 +54,7 @@ class Database:
         # This will overwrite the default folder if folder is provided:
         if data_folder is not None:
             if data_folder[-1] == "/":
-                data_folder
+                data_folder = data_folder[0:-1]
             self.data_folder = data_folder
             self.posterior_folder = f"{data_folder}/PosteriorData"
             self.strain_folder = f"{data_folder}/StrainData"
