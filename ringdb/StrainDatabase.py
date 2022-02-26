@@ -90,7 +90,7 @@ class StrainDatabase:
             result = self.read_data_from_file(f, scheme, replacement_dict)
         return result
             
-    def get_strain(self,event, detectors=None, duration=32.0):
+    def strain(self,event, detectors=None, duration=32.0):
         # Download the file if the file doesn't exist
         if event not in self.events_present:
             self.make_event_file(event, duration=duration)
