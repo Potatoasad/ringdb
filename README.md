@@ -58,7 +58,7 @@ event = db.event("GW200316_215756")
 total_mass_priors = event.read_posterior_file("/{approximant}/priors/samples/total_mass", datatype='array')
 ```
 
-The database knows how to interpolate things like `{approximant}`, `{detector}` and`{event`, which correspond to the waveform name, the detectors and the event name.
+The database knows how to interpolate things like `{approximant}`, `{detector}` and`{event}`, which correspond to the waveform name, the detectors and the event name.
 
 If you happen to use a particular query a lot you can save it in the database schema, making subsequent accesses easier:
 
