@@ -48,7 +48,7 @@ _This doesn't work for GWTC-1 events, but will work for the rest_
 
 If you have a particular object you would like to pull from an hdf5 file that is not covered by the above, you can query it directly.
 
-As an example, if I wanted to pull __prior sample for the total mass__. I know for example in GW200316_215756 they will be found in the directory:
+As an example, if I wanted to pull __prior samples for the total mass__. I know for example in GW200316_215756 they will be found in the directory:
 `/C01:IMRPhenomXPHM/priors/samples/total_mass` and it needs to read as an `array`.
 
 In general the path seems to follow `/{approximant}/priors/samples/total_mass`. I can then call that for this event:
@@ -56,6 +56,16 @@ In general the path seems to follow `/{approximant}/priors/samples/total_mass`. 
 ```python
 event = db.event("GW200316_215756")
 total_mass_priors = event.read_posterior_file("/{approximant}/priors/samples/total_mass", datatype='array')
+```
+
+The database knows how to interpolate things like `{approximant}`, `{detector}` and`{event`, which correspond to the waveform name, the detectors and the event name.
+
+If you happen to use a particular query a lot you can save it in the database schema, making subsequent accesses easier:
+
+```python
+db.update_posterior_schema({'prior_total_mass': {'path': "/{approximant}/priors/samples/total_mass", 'type':'array'}})
+
+total_mass_priors = event.read_posterior_file_from_schema('prior_total_mass')
 ```
 
 
