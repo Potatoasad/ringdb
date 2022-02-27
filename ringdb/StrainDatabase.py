@@ -65,7 +65,8 @@ class StrainDatabase:
     
     @staticmethod
     def preprocess_path(path, replacement_dict):
-        replacements = { ("{"+key+"}"): value for key,value in replacement_dict.items() }
+        rep = lambda x: '' if x is None else x
+        replacements = { ("{"+key+"}"): rep(value) for key,value in replacement_dict.items() }
         for key, value in replacements.items():
             path = path.replace(key,value)
         return path
@@ -90,7 +91,7 @@ class StrainDatabase:
             result = self.read_data_from_file(f, scheme, replacement_dict)
         return result
             
-    def strain(self,event, detectors=None, duration=32.0):
+    def strain(self, event, detectors=None, duration=32.0):
         # Download the file if the file doesn't exist
         if event not in self.events_present:
             self.make_event_file(event, duration=duration)

@@ -70,6 +70,12 @@ class Database:
         self.PosteriorDB = PosteriorDatabase(self.posterior_folder, self.posterior_urls, self.psd_urls, self.strain_urls)
         self.StrainDB = StrainDatabase(self.strain_folder, self.strain_urls)
 
+    def update_posterior_schema(self, schema_addition):
+        self.PosteriorDB.schema.update(schema_addition)
+
+    def update_strain_schema(self, schema_addition):
+        self.StrainDB.schema.update(schema_addition)
+
     def event(self, eventname):
         return Event(eventname, self)
 
@@ -189,7 +195,7 @@ class Event:
                 returns the object for that one detector value
         """
         # Run over the list of detectors if not provided
-        if detectors is None:
+        if ((detectors is None) and ("{detector}" in h5path)):
             detectors = self.PD_ref.available_detectors(self.name)
 
         # Choose the best approximant according to the provided list order
@@ -208,11 +214,15 @@ class Event:
                 file = self.PD_ref.event_path(self.name)
                 new_replacement_dict = replacement_dict.copy()
                 new_replacement_dict['detector'] = ifo
-                result[ifo] = self.PD_ref.read_data_from_file(file, scheme, new_replacement_dict)
+                with h5py.File(file, 'r') as f:
+                    result[ifo] = self.PD_ref.read_data_from_file(f, scheme, new_replacement_dict)
         else:
             scheme = {'type': datatype, 'name': attr_name, 'path': h5path}
             file = self.PD_ref.event_path(self.name)
-            result = self.PD_ref.read_data_from_file(file, scheme, replacement_dict)
+            with h5py.File(file, 'r') as f:
+                print(scheme)
+                print(replacement_dict)
+                result = self.PD_ref.read_data_from_file(f, scheme, replacement_dict)
         return result
 
     def read_strain_file(self, h5path, datatype='array', attr_name=None, detectors=None, replacement_dict=None):
@@ -247,7 +257,7 @@ class Event:
                 returns the object for that one detector value
         """
         # Run over the list of detectors if not provided
-        if detectors is None:
+        if ((detectors is None) and ("{detector}" in h5path)):
             detectors = self.SD_ref.available_detectors(self.name)
         
         # Method to interpolate the path
@@ -262,11 +272,72 @@ class Event:
                 file = filepath = f"{self.folder}/{event}.hdf5"
                 new_replacement_dict = replacement_dict.copy()
                 new_replacement_dict['detector'] = ifo
-                result[ifo] = self.SD_ref.read_data_from_file(file, scheme, new_replacement_dict)
+                with h5py.File(file, 'r') as f:
+                    result[ifo] = self.SD_ref.read_data_from_file(f, scheme, new_replacement_dict)
         else:
             scheme = {'type': datatype, 'name': attr_name, 'path': h5path}
             file = filepath = f"{self.folder}/{event}.hdf5"
-            result = self.SD_ref.read_data_from_file(file, scheme, replacement_dict)
+            with h5py.File(file, 'r') as f:
+                result = self.SD_ref.read_data_from_file(f, scheme, replacement_dict)
         return result
+
+    def read_posterior_file_from_schema(self, data_name, detectors=None, approximant=None):
+        """
+        If you've already updated a schema for the posterior database, you can simply just call
+        it by name here.
+
+        Example:
+        >> df.update_posterior_schema({'calibrations': {'path': '/{approximant}/priors/calibration/{detector}', 
+                                                        'type':  'array'}
+                                        })
+        >> df.read_posterior_file_from_schema('calibrations')
+        >> ## Outputs calibration arrays for each detector
+        """
+        if ((detectors is None) and ("{detector}" in self.PD_ref.schema[data_name]['path'])):
+            detectors = self.PD_ref.available_detectors(self.name)
+
+        if approximant is None:
+            approximant = self.PD_ref.choose_approximant(self.name)
+
+        if isinstance(detectors, list):
+            result = {}
+            for ifo in detectors:
+                result[ifo] = self.PD_ref.read_data(self.name, data_name, approximant=approximant, detector=ifo)
+        else:
+            result = self.PD_ref.read_data(self.name, data_name, approximant=approximant, detector=detectors)
+        return result
+
+
+    def read_strain_file_from_schema(self, data_name, detectors=None, approximant=None):
+        """
+        If you've already updated a schema for the posterior database, you can simply just call
+        it by name here. 
+
+        As an example we want to extract the number of time samples in the strain array. This is 
+        stored as an attribute names "Npoints" at the path the strain is stored
+        Example:
+        >> df.update_strain_schema({'Number of points': {'path': '/{detector}/strain/Strain', 
+                                                        'type':  'attribute',
+                                                        'name': 'Npoints'}
+                                        })
+        >> df.read_strain_file_from_schema('Number of points')
+        >> ## Outputs number of strain time samples for each detector
+        """
+        if ((detectors is None) and ("{detector}" in self.SD_ref.schema[data_name]['path'])):
+            detectors = self.SD_ref.available_detectors(self.name)
+
+        if approximant is None:
+            approximant = self.PD_ref.choose_approximant(self.name)
+
+        if isinstance(detectors, list):
+            result = {}
+            for ifo in detectors:
+                result[ifo] = self.SD_ref.read_data(event=self.name, data_name=data_name, detector=ifo)
+        else:
+            result = self.SD_ref.read_data(event=self.name, data_name=data_name, detector=detectors)
+        return result
+
+        
+
 
         

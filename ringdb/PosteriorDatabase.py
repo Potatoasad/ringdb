@@ -242,7 +242,8 @@ class PosteriorDatabase:
 
     @staticmethod
     def preprocess_path(path, replacement_dict):
-        replacements = { ("{"+key+"}"): value for key,value in replacement_dict.items() }
+        rep = lambda x: '' if x is None else x
+        replacements = { ("{"+key+"}"): rep(value) for key,value in replacement_dict.items() }
         for key, value in replacements.items():
             path = path.replace(key,value)
         return path
