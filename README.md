@@ -19,6 +19,12 @@ first_event = db.event("GW150914")
 
 ### Query
 
+Now you can query a bunch of things from the `Event` object. The most important are:
+
+- `event.posteriors()` -> pandas Dataframe with all the posterior samples
+- `event.psd()` -> dictionary of `ringdown.PowerSpectrum` objects (from the [ringdown package](https://github.com/maxisi/ringdown)) for each detector
+- `event.strain()` -> dictionary of `ringdown.Data` objects (from the [ringdown package](https://github.com/maxisi/ringdown)) for each detector
+
 #### Get a PSD
 ```python
 first_psd = first_event.psd() # Returns a dictionary labelled by detectors
@@ -36,3 +42,21 @@ type(first_posteriors) # pandas DataFrame with all the posteriors
 first_strain = first_event.strain() # Returns a dictionary labelled by detectors
 type(first_strain['L1']) # Ringdown.Data object
 ```
+
+### Custom Queries
+_This doesn't work for GWTC-1 events, but will work for the rest_
+
+If you have a particular object you would like to pull from an hdf5 file that is not covered by the above, you can query it directly.
+
+As an example, if I wanted to pull __prior sample for the total mass__. I know for example in GW200316_215756 they will be found in the directory:
+`/C01:IMRPhenomXPHM/priors/samples/total_mass` and it needs to read as an `array`.
+
+In general the path seems to follow `/{approximant}/priors/samples/total_mass`. I can then call that for this event:
+
+```python
+event = db.event("GW200316_215756")
+total_mass_priors = event.read_posterior_file("/{approximant}/priors/samples/total_mass", datatype='array')
+```
+
+
+
