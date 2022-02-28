@@ -232,9 +232,14 @@ class PosteriorDatabase:
         
         if isinstance(detector, list):
             psd_dict = {}
+            file_type = self.get_file_extension(event)
+            filepath = f"{self.folder}/{event}.{file_type}"
             for ifo in detector:
-                psd_vals = self.read_data(event, 'psd', detector=ifo)
-                psd_dict.update({ifo: ringdown.PowerSpectrum(psd_vals[:,1], index=psd_vals[:,0])})
+                if self.check_data_exists(event, 'psd', detector=ifo):
+                    psd_vals = self.read_data(event, 'psd', detector=ifo)
+                    psd_dict.update({ifo: ringdown.PowerSpectrum(psd_vals[:,1], index=psd_vals[:,0])})
+                else:
+                    print(f"The PSD for event {event} and detector {ifo} doesn't exist")
             return psd_dict
         else:
             psd_vals = self.read_data(event, 'psd', detector=detector)
@@ -259,6 +264,10 @@ class PosteriorDatabase:
         else:
             l = None
         return l
+
+    def check_data_from_file(self, file, scheme, replacement_dict):
+        path = self.preprocess_path(scheme['path'], replacement_dict)
+        return (path in file)
     
     def read_data(self, event, data_name, approximant=None, detector=None):
         file_type = self.get_file_extension(event)
@@ -269,4 +278,15 @@ class PosteriorDatabase:
         with h5py.File(file, 'r') as f:
             scheme = self.schema[data_name]
             result = self.read_data_from_file(f, scheme, replacement_dict)
+        return result
+
+    def check_data_exists(self, event, data_name, approximant=None, detector=None):
+        file_type = self.get_file_extension(event)
+        file = f"{self.folder}/{event}.{file_type}"
+        if approximant is None:
+            approximant = self.choose_approximant(event)
+        replacement_dict = {'event': event, 'approximant': approximant, 'detector':detector}
+        with h5py.File(file, 'r') as f:
+            scheme = self.schema[data_name]
+            result = self.check_data_from_file(f, scheme, replacement_dict)
         return result
