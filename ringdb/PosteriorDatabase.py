@@ -7,7 +7,7 @@ import numpy as np
 
 approximant_order = ["IMRPhenomPv2",
 "IMRPhenomPv3",
-"IMRPhenomXPHM"
+"IMRPhenomXPHM",
 "IMRPhenomHM",
 "IMRPhenom",
 "AlignedSpin",
