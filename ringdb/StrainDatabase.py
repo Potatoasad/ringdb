@@ -54,7 +54,7 @@ class StrainDatabase:
         # Download all the events available
         files = {}
         for ifo in self.available_detectors(event):
-            files[ifo] = self.download_file(event, ifo)
+            files[ifo] = self.download_file(event, ifo, duration=duration)
             
         # Combine them into one file named {event}.hdf5
         self.combine_detector_files(event, files)
