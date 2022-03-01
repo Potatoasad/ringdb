@@ -33,7 +33,7 @@ _(Will error out for most non `x86-64` setups, use Rosetta if on M1)_
 
 #### Virtual Environments
 
-For the latest version, you can use  `make` to run and install the required things in a virtual environment. Replace `VENV_PATH` with any path you're comfortable with making a folder in.
+For the latest version, you can use  `make` to run and install the required things in a virtual environment. Replace `VENV_PATH` with any path you're comfortable with making a folder in.  First import once the venv is setup may be slow, but it will be fine after that. 
 
 ```bash
 git clone https://github.com/Potatoasad/ringdb
