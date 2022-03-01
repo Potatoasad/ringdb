@@ -1,6 +1,47 @@
 # ringdb
 A gravitational event database that queries and locally saves event strain samples,  detector PSDs and posterior samples.
 
+## Quick Start
+
+```python
+from ringdb import Database
+
+# Initialise the database in an empty folder you want your data stored
+db = Database("./Data") 
+db.initialize()
+
+# Pick an event of your choosing 
+event = db.event("GW190521")
+
+# Query it for psds, posteriors and strain data for each detector 
+psd = event.psd()	
+posteriors = event.posteriors() 
+strains = event.strain()
+```
+
+## Installation
+
+#### From pip
+
+This package can be downloaded directly from pip. 
+
+```bash
+pip install ringdb
+```
+
+_(Will error out for most non `x86-64` setups, use Rosetta if on M1)_
+
+#### Virtual Environments
+
+For the latest version, you can use  `make` to run and install the required things in a virtual environment. Replace `VENV_PATH` with any path you're comfortable with making a folder in.
+
+```bash
+git clone https://github.com/Potatoasad/ringdb
+cd ringdb
+make install VENV_PATH=/path/to/venv
+. /path/to/venv/bin/activate
+```
+
 ## Usage:
 ### Initialize
 Set a folder in your computer somewhere where data will be saved (if the folder isn't there it will be created). Initialize a `Database` object. 
