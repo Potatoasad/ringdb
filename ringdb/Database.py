@@ -1,7 +1,6 @@
 import os
 import subprocess
 import ringdown
-from ringdown import IMR
 from . import File
 import pandas as pd
 import numpy as np
