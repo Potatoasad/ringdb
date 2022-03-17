@@ -24,5 +24,6 @@ setup(name='ringdb',
             'matplotlib',
             'numpy',
             'pandas',
+            'tqdm',
             'ringdown']
      )
