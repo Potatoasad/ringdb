@@ -1,9 +1,12 @@
 import os
 import subprocess
 import ringdown
+from ringdown import PowerSpectrum
+from tqdm import tqdm
 from . import File
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 approximant_order = ["IMRPhenomPv2",
 "IMRPhenomPv3",
@@ -108,6 +111,33 @@ class PosteriorDatabase:
             file_type = 'h5'
         return file_type
 
+    @staticmethod
+    def hdf5_preprocess(df):
+        """
+        Taken from 
+        https://stackoverflow.com/questions/30773073/save-pandas-dataframe-using-h5py-for-interoperabilty-with-other-hdf5-readers
+
+        Convert a pandas DataFrame object to a numpy structured array.
+
+        :param df: the data frame to convert
+        :return: a numpy structured array representation of df
+        """
+
+        def type_rules(the_type):
+            if 'numpy.object_' in str(the_type):
+                return np.dtype('S64')
+            else:
+                return the_type
+
+        v = df.values
+        cols = df.columns 
+        types = [(k, type_rules(df[k].dtype.type)) for (i, k) in enumerate(cols)]
+        dtype = np.dtype(types)
+        z = np.zeros(v.shape[0], dtype)
+        for (i, k) in enumerate(z.dtype.names):
+            z[k] = v[:, i]
+        return z, dtype
+
     
     def download_file(self, event):
         # Get the url to download for this event
@@ -167,7 +197,7 @@ class PosteriorDatabase:
         # Return a file with the same 
         return File(f"{self.folder}/{filename}")
     
-    def posteriors(self,eventname):
+    def posteriors(self,eventname, peaks=False):
         # Download the file if it doesn't exist
         if not self.event_exists(eventname):
             self.download_file(eventname)
@@ -194,6 +224,56 @@ class PosteriorDatabase:
             df_posteriors_all = pd.read_csv(post_filename,delimiter='\t')
             df_posteriors_all['waveform_name'] = 'IMRPhenomPv2'
             df_posteriors_all['waveform_code'] = int(ls.IMRPhenomPv2)
+
+        # Edit the posteriors so all of them have atleast two columns called
+        # 'final_spin' and 'final_mass'. The following just says that if
+        # there are non_evolved quantities with no standard counterparts, just
+        # create a new column with 'non_evolved' removed
+        for x in df_posteriors_all.columns:
+            if '_non_evolved' in x:
+                new_col = x.replace('_non_evolved','')
+                if new_col not in df_posteriors_all.columns:
+                    df_posteriors_all[new_col] = df_posteriors_all[x]
+
+
+        # Calculate the peaks for each detector based on each sample. 
+        # and then save it into the posterior file
+        
+        if (peaks) and ('t_peak' not in df_posteriors_all.columns):
+
+            print("Calculating the peak times for each sample. May take several minutes.")
+            print("Is only calculated once the first time you ask for it for a particular event")
+
+            # Calculate all t_peaks
+            calculated_times = []
+
+            for i,x in tqdm(df_posteriors_all.iterrows()):
+                my_dict = {}
+                try:
+                    t_peak, t_dict, _, _ = ringdown.peak.complex_strain_peak_time_td(x.to_dict(), wf=int(x['waveform_code']),
+                                                                     dt=(1/4096), f_low=16.0, f_ref=16.0)
+                    t_dict = {(ifo+"_peak"):v for ifo,v in t_dict.items()}
+                    my_dict.update(t_dict)
+                    my_dict.update(x)
+                except:
+                    t_dict = {(ifo+"_peak"):0.0 for ifo in ['geocent','H1','L1','V1']}
+                    my_dict.update(t_dict)
+                    my_dict.update(x)
+                    print("Predictions failed for ")
+                calculated_times.append(my_dict)
+
+            df_times = pd.DataFrame(calculated_times).rename({'geocent_peak': 't_peak'},axis=1)
+
+            if (file_type == 'h5') or (file_type == 'hdf5'):
+                output_array, output_array_types = self.hdf5_preprocess(df_times)
+                with h5py.File(post_filename, 'r+') as f:
+                    del f[posterior_path]
+                    f.create_dataset(posterior_path, data=output_array, dtype=output_array_types)
+            elif file_type == 'dat':
+                df_times.to_csv(post_filename, sep='\t')
+
+            df_posteriors_all = df_times
+
         return df_posteriors_all
 
     def psd(self, event, detector=None):
@@ -217,12 +297,12 @@ class PosteriorDatabase:
                 cols = ['freq'] + detector
                 psd_samples = psd_samples.rename(renaming, axis=1)
                 psd_samples = psd_samples[cols]
-                psd_dict = {ifo: ringdown.PowerSpectrum(psd_samples[ifo].values, index=psd_samples['freq'].values) for ifo in detector}
+                psd_dict = {ifo: PSD(psd_samples[ifo].values, index=psd_samples['freq'].values) for ifo in detector}
                 return psd_dict
             else:
                 cols = ['freq'] + [detector]
                 psd_samples = psd_samples.rename(renaming, axis=1)[cols]
-                psd = ringdown.PowerSpectrum(psd_samples[detector].values, index=psd_samples['freq'].values)
+                psd = PSD(psd_samples[detector].values, index=psd_samples['freq'].values)
                 return psd
         
         # If the event is not in GWTC-1 then the samples are available in the posterior files.
@@ -237,13 +317,13 @@ class PosteriorDatabase:
             for ifo in detector:
                 if self.check_data_exists(event, 'psd', detector=ifo):
                     psd_vals = self.read_data(event, 'psd', detector=ifo)
-                    psd_dict.update({ifo: ringdown.PowerSpectrum(psd_vals[:,1], index=psd_vals[:,0])})
+                    psd_dict.update({ifo: PSD(psd_vals[:,1], index=psd_vals[:,0])})
                 else:
                     print(f"The PSD for event {event} and detector {ifo} doesn't exist")
             return psd_dict
         else:
             psd_vals = self.read_data(event, 'psd', detector=detector)
-            return ringdown.PowerSpectrum(psd_vals[:,1], index=psd_vals[:,0])
+            return PSD(psd_vals[:,1], index=psd_vals[:,0])
 
     @staticmethod
     def preprocess_path(path, replacement_dict):
@@ -290,3 +370,87 @@ class PosteriorDatabase:
             scheme = self.schema[data_name]
             result = self.check_data_from_file(f, scheme, replacement_dict)
         return result
+
+
+
+
+class PSD(PowerSpectrum):
+    def __init__(self, *args, **kwargs):
+        super(PSD, self).__init__(*args, **kwargs)
+
+    @property
+    def _constructor(self):
+        return PSD
+
+    def plot(self):
+        """
+        Do a loglog plot of the powerspectrum
+        """
+        fig, ax = plt.subplots()
+        ax.loglog(self)
+        plt.show()
+
+    @property
+    def bin_sizes(self):
+        """
+        Plot the bin sizes of each frequency bin, to detect if there
+        are any inconsistencies in the bin sizes
+        """
+        return pd.Series(self.freq[1:-1] - self.freq[0:-2], index=self.freq[0:-2])
+
+    def low_pad(self, from_freq=None, to_freq=0.0, val=None):
+        """
+        Pads the power spectrum from from_freq to to_freq
+        with the value val or
+        """
+        # Set parameter values
+        df = self.delta_f
+        freq = self.freq
+        from_freq = from_freq or freq.min()
+
+        # Set fill value and lowest new freq bin
+        fill_value = val or self[from_freq]
+        new_lowest_freq_bin = to_freq if to_freq < freq.min() else freq.min()
+
+        new_index = np.append(np.arange(new_lowest_freq_bin, from_freq, df), freq)
+        new_index = np.array(list(set(new_index)))
+        new_index.sort()
+
+        # Reindex the series and replace the value with the set value
+        # or the default value, which is the one at freq_from
+        a = self.copy()
+        a[a.freq < from_freq] = fill_value
+        return a.reindex(new_index, fill_value=fill_value)
+
+    def high_pad(self, from_freq=None, to_freq=None, val=None, inclusive=True):
+        """
+        Pads the power spectrum in such way that all frequency bins 
+        above from_freq get assigned the power at from_freq.
+        
+        The default behaviour is to extend the frequency indices all the 
+        way up to the next power of two
+        """
+        # Set parameter values
+        df = self.delta_f
+        freq = self.freq
+        from_freq = from_freq or freq.max()
+        df_end = df if inclusive else 0.0
+
+        # Set fill value and lowest new freq bin
+        fill_value = val or self[from_freq]
+        next_pow_of_2 = int(2**np.ceil(np.log(freq.max())/np.log(2)))
+        new_highest_freq_bin = next_pow_of_2 if to_freq is None else to_freq
+
+        # Create new index
+        new_index = np.append(freq, np.arange(from_freq, new_highest_freq_bin + df_end, df))
+        new_index = np.array(list(set(new_index).union(set([new_highest_freq_bin]))))
+        new_index.sort()
+
+        # Reindex the series and replace the value with the set value
+        # or the default value, which is the one at freq_from
+        a = self.copy()
+        a[from_freq::] = fill_value 
+        return a.reindex(new_index, fill_value=fill_value)
+
+
+

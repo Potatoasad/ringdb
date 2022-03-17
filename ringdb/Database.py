@@ -1,9 +1,11 @@
 import os
 import subprocess
 import ringdown
+from ringdown import IMR
 from . import File
 import pandas as pd
 import numpy as np
+from functools import cached_property
 import h5py
 
 try:
@@ -90,7 +92,7 @@ class Event:
         self.PD_ref = DB_reference.PosteriorDB
         self.SD_ref = DB_reference.StrainDB
 
-    def posteriors(self):
+    def posteriors(self, **kwargs):
         """
         Returns a dataframe of the posterior samples of the event
 
@@ -98,7 +100,7 @@ class Event:
             pd.DataFrame: Posterior samples of the event with each row
             being a posterior sample and the columns the parameter
         """
-        return self.PD_ref.posteriors(self.name)
+        return self.PD_ref.posteriors(self.name, **kwargs)
 
     def psd(self, detector=None):
         """
@@ -336,6 +338,19 @@ class Event:
         else:
             result = self.SD_ref.read_data(event=self.name, data_name=data_name, detector=detectors)
         return result
+
+    @property
+    def t_peak_median_sample(self):
+        # Get posterior
+        df_times = self.posteriors(peaks=True)
+        df_times = df_times[df_times['t_peak'] != 0.0]
+
+        # Get the sample corresponding to median t_peak
+        df_times.sort_values('t_peak',ascending=True,inplace=True)
+        new_dict = {'event': self.name}
+        new_dict.update(df_times[df_times.t_peak <= df_times.t_peak.median()].tail(1).squeeze().to_dict())
+
+        return pd.DataFrame([new_dict])
 
         
 

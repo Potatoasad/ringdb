@@ -7,6 +7,7 @@ import h5py
 import subprocess
 import os
 import lalsimulation as ls
+import tqdm
 
 try:
     import importlib.resources as pkg_resources
