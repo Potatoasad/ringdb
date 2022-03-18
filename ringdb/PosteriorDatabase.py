@@ -3,6 +3,7 @@ import subprocess
 import ringdown
 from ringdown import PowerSpectrum
 from tqdm import tqdm
+from .peak import complex_strain_peak_time_td
 from . import File
 import pandas as pd
 import numpy as np
@@ -236,45 +237,62 @@ class PosteriorDatabase:
                     df_posteriors_all[new_col] = df_posteriors_all[x]
 
 
-        # Calculate the peaks for each detector based on each sample. 
-        # and then save it into the posterior file
-        
-        if (peaks) and ('t_peak' not in df_posteriors_all.columns):
-
-            print("Calculating the peak times for each sample. May take several minutes.")
-            print("Is only calculated once the first time you ask for it for a particular event")
-
-            # Calculate all t_peaks
-            calculated_times = []
-
-            for i,x in tqdm(df_posteriors_all.iterrows()):
-                my_dict = {}
-                try:
-                    t_peak, t_dict, _, _ = ringdown.peak.complex_strain_peak_time_td(x.to_dict(), wf=int(x['waveform_code']),
-                                                                     dt=(1/4096), f_low=16.0, f_ref=16.0)
-                    t_dict = {(ifo+"_peak"):v for ifo,v in t_dict.items()}
-                    my_dict.update(t_dict)
-                    my_dict.update(x)
-                except:
-                    t_dict = {(ifo+"_peak"):0.0 for ifo in ['geocent','H1','L1','V1']}
-                    my_dict.update(t_dict)
-                    my_dict.update(x)
-                    print("Predictions failed for ")
-                calculated_times.append(my_dict)
-
-            df_times = pd.DataFrame(calculated_times).rename({'geocent_peak': 't_peak'},axis=1)
-
-            if (file_type == 'h5') or (file_type == 'hdf5'):
-                output_array, output_array_types = self.hdf5_preprocess(df_times)
-                with h5py.File(post_filename, 'r+') as f:
-                    del f[posterior_path]
-                    f.create_dataset(posterior_path, data=output_array, dtype=output_array_types)
-            elif file_type == 'dat':
-                df_times.to_csv(post_filename, sep='\t')
-
-            df_posteriors_all = df_times
+        if peaks:
+            peak_df = self.calculate_t_peaks(eventname)
+            new_df = pd.concat([peak_df, df_posteriors_all],axis=1)
+            masses_match = np.all(np.isclose(new_df['final_mass'], new_df['final_mass_check']))
+            spins_match = np.all(np.isclose(new_df['final_spin'], new_df['final_spin_check']))
+            if masses_match and spins_match:
+                return new_df
+            else:
+                print(masses_match, spins_match)
+                print(new_df[['final_mass','final_mass_check']])
+                print(new_df[['final_spin','final_spin_check']])
+                raise ValueError("The order of the peak times have gone out of sync with the posteriors")
 
         return df_posteriors_all
+
+    def calculate_t_peaks(self, event, recalculate=False):
+
+        # Create the t_peak directory if not already there
+        if not os.path.exists(f"{self.folder}/PeakTimes"):
+            subprocess.run(["mkdir", f"{self.folder}/PeakTimes"])
+
+        # Check if the file is there, if it is, just read and return
+        # it
+        if (not recalculate) and os.path.exists(f"{self.folder}/PeakTimes/{event}.csv"):
+            return pd.read_csv(f"{self.folder}/PeakTimes/{event}.csv")
+
+
+        # Get the posterior samples:
+        df_posteriors_all = self.posteriors(event)
+
+        print("Calculating the peak times for each sample. May take several minutes.")
+        print("Is only calculated once the first time you ask for it for a particular event")
+        print(f"Calculating for the event {event}")
+
+        # Calculate all t_peaks
+        calculated_times = []
+
+        for i,x in tqdm(df_posteriors_all.iterrows()):
+            my_dict = {}
+            try:
+                t_peak, t_dict, _, _ = complex_strain_peak_time_td(x.to_dict(), wf=int(x['waveform_code']),
+                                                                 dt=(1/4096), f_low=16.0, f_ref=16.0)
+                t_dict = {(ifo+"_peak"):v for ifo,v in t_dict.items()}
+                my_dict.update(t_dict)
+                my_dict.update({"sample_index": i, 'final_mass_check': x['final_mass'], 'final_spin_check': x['final_spin']})
+            except:
+                t_dict = {(ifo+"_peak"):0.0 for ifo in ['geocent','H1','L1','V1']}
+                my_dict.update(t_dict)
+                my_dict.update({"sample_index": i, 'final_mass_check': x['final_mass'], 'final_spin_check': x['final_spin']})
+                print(f"Predictions failed for event {event}")
+            calculated_times.append(my_dict)
+
+        df_times = pd.DataFrame(calculated_times).rename({'geocent_peak': 't_peak'},axis=1)
+        df_times.set_index('sample_index',inplace=True)
+        df_times.to_csv(f"{self.folder}/PeakTimes/{event}.csv")
+        return df_times
 
     def psd(self, event, detector=None):
         # Return all detectors if none available

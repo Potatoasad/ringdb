@@ -20,6 +20,7 @@ from .File import *
 from .StrainDatabase import *
 from .PosteriorDatabase import *
 from .Database import *
+from .peak import *
 from . import File
 from . import StrainDatabase
 from . import PosteriorDatabase
