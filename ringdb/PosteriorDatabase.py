@@ -221,9 +221,9 @@ class PosteriorDatabase:
                 waveform_code = getattr(ls,waveform_name)
                 df_posteriors_all['waveform_name'] = waveform_name
                 df_posteriors_all['waveform_code'] = int(waveform_code)
-		if f"/{approx}/meta_data/meta_data" in f:
-			f_ref = f[f"/{approx}/meta_data/meta_data/f_ref"][()]
-			f_low = f[f"/{approx}/meta_data/meta_data/f_low"][()]
+                if f"/{approx}/meta_data/meta_data" in f:
+                    f_ref = f[f"/{approx}/meta_data/meta_data/f_ref"][()]
+                    f_low = f[f"/{approx}/meta_data/meta_data/f_low"][()]
         elif (file_type == 'dat'):
             df_posteriors_all = pd.read_csv(post_filename,delimiter='\t')
             df_posteriors_all['waveform_name'] = 'IMRPhenomPv2'
