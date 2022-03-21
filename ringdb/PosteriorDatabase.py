@@ -198,7 +198,7 @@ class PosteriorDatabase:
         # Return a file with the same 
         return File(f"{self.folder}/{filename}")
     
-    def posteriors(self,eventname, peaks=False):
+    def posteriors(self,eventname, peaks=False, f_ref=20.0, f_low=20.0):
         # Download the file if it doesn't exist
         if not self.event_exists(eventname):
             self.download_file(eventname)
@@ -221,6 +221,9 @@ class PosteriorDatabase:
                 waveform_code = getattr(ls,waveform_name)
                 df_posteriors_all['waveform_name'] = waveform_name
                 df_posteriors_all['waveform_code'] = int(waveform_code)
+		if f"/{approx}/meta_data/meta_data" in f:
+			f_ref = f[f"/{approx}/meta_data/meta_data/f_ref"][()]
+			f_low = f[f"/{approx}/meta_data/meta_data/f_low"][()]
         elif (file_type == 'dat'):
             df_posteriors_all = pd.read_csv(post_filename,delimiter='\t')
             df_posteriors_all['waveform_name'] = 'IMRPhenomPv2'
@@ -238,7 +241,7 @@ class PosteriorDatabase:
 
 
         if peaks:
-            peak_df = self.calculate_t_peaks(eventname)
+            peak_df = self.calculate_t_peaks(eventname, f_ref=f_ref, f_low=f_low)
             new_df = pd.concat([peak_df, df_posteriors_all],axis=1)
             masses_match = np.all(np.isclose(new_df['final_mass'], new_df['final_mass_check']))
             spins_match = np.all(np.isclose(new_df['final_spin'], new_df['final_spin_check']))
@@ -252,7 +255,7 @@ class PosteriorDatabase:
 
         return df_posteriors_all
 
-    def calculate_t_peaks(self, event, recalculate=False):
+    def calculate_t_peaks(self, event, f_low=20.0, f_ref=20.0, recalculate=False):
 
         # Create the t_peak directory if not already there
         if not os.path.exists(f"{self.folder}/PeakTimes"):
@@ -278,7 +281,7 @@ class PosteriorDatabase:
             my_dict = {}
             try:
                 t_peak, t_dict, _, _ = complex_strain_peak_time_td(x.to_dict(), wf=int(x['waveform_code']),
-                                                                 dt=(1/4096), f_low=16.0, f_ref=16.0)
+                                                                 dt=(1/4096), f_low=f_low, f_ref=f_ref)
                 t_dict = {(ifo+"_peak"):v for ifo,v in t_dict.items()}
                 my_dict.update(t_dict)
                 my_dict.update({"sample_index": i, 'final_mass_check': x['final_mass'], 'final_spin_check': x['final_spin']})
