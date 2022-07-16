@@ -1,0 +1,5 @@
+*.DS_Store
+*/.DS_Store
+ringdb.egg-info/*
+ringdb/__pycache__/*
+ringdb/metadb/__pycache__/*
