@@ -1,0 +1,9 @@
+*.nc
+*.hdf5
+*.hdf5*
+*.h5
+*.dat
+.DS_Store
+*.pyc
+*.json
+*.zip
