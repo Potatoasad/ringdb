@@ -3,7 +3,8 @@
 *.hdf5*
 *.h5
 *.dat
-.DS_Store
+*/.DS_Store
+*.DS_Store
 *.pyc
 *.json
 *.zip
@@ -11,3 +12,5 @@ ringdb.egg-info/*
 ringdb/metadb/__pycache__/*
 ringdb/metadb/__pycache__/__init__.cpython-38.pyc
 *.pyc
+ringdb/__pycache__/*
+ringdb/metadb/__pycache__/*
