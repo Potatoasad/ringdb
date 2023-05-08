@@ -25,5 +25,5 @@ setup(name='ringdb',
             'numpy',
             'pandas',
             'tqdm',
-            'ringdown @ git+https://github.com/Potatoasad/ringdown']
+            'ringdown']
      )

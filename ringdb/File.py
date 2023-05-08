@@ -22,7 +22,8 @@ class File:
         thefilepath = f"{save_folder}/{url.split('/')[-1]}"
         # Downloading the file we have into the folder
         print(f"Downloading file from {url}")
-        subprocess.run(["wget",url,"-P",save_folder])
+        #subprocess.run(["wget",url,"-P",save_folder])
+        subprocess.run(["curl",url,"--output",thefilepath])
         file = cls(thefilepath)
         if new_filename is not None:
             file.rename(new_filename)
