@@ -20,10 +20,8 @@ setup(name='ringdb',
       package_data={'ringdb': ['metadb/*']},
       install_requires=[
             'h5py',
-            'lalsuite',
             'matplotlib',
             'numpy',
             'pandas',
-            'tqdm',
-            'ringdown']
+            'tqdm']
      )
