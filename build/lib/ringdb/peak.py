@@ -31,8 +31,7 @@ def _ishift(hp_t, hc_t):
     return (len(hmag) - (ib + (3*a - 4*b + c)/(2*(a-2*b+c)) - 1))%len(hmag)
 """
 
-def complex_strain_peak_time_fd(sample, wf=10, f_high=1024, df=0.5, f_low=20., f_ref=100.):
-    pass
+#def complex_strain_peak_time_fd(sample, wf=ls.IMRPhenomPv2, f_high=1024, df=0.5, f_low=20., f_ref=100.):
     """Return the time associated with the peak complex strain in detector
     `prefix` and associated parameter values.
 
@@ -54,8 +53,7 @@ def complex_strain_peak_time_fd(sample, wf=10, f_high=1024, df=0.5, f_low=20., f
     :return: `(t_peak_geocent, t_peak_dict, hp, hc)`: the GPS time of the peak
       at geocenter, a dict mapping 'geocent' or IFO name to GPS of peak arrival,
       plus frequency series, cross frequency series.
-    """
-    """
+    """"""
     tname = 'geocent_time'
     samp = sample
     geocent_GPS = lal.LIGOTimeGPS(samp[tname])
@@ -94,8 +92,7 @@ def complex_strain_peak_time_fd(sample, wf=10, f_high=1024, df=0.5, f_low=20., f
 
     return samp[tname] + tpeak, t_dict, hp, hc
 """
-def complex_strain_peak_time_td(sample, wf=10, dt=1.0/1024.0, f_low=20., f_ref=100.):
-    pass
+#def complex_strain_peak_time_td(sample, wf=ls.NRSur7dq4, dt=1.0/1024.0, f_low=20., f_ref=100.):
     """Return the time associated with the peak complex strain in detector
     `prefix` and associated parameter values.
 
@@ -116,8 +113,7 @@ def complex_strain_peak_time_td(sample, wf=10, dt=1.0/1024.0, f_low=20., f_ref=1
     :return: `(t_peak_geocent, t_peak_dict, hp, hc)`: the GPS time of the peak
       at geocenter, a dict mapping 'geocent' or IFO name to GPS of peak arrival,
       plus frequency series, cross frequency series.
-    """
-    """
+    """"""
     tname = 'geocent_time'
     samp = sample
     geocent_GPS = lal.LIGOTimeGPS(samp[tname])
