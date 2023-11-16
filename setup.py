@@ -10,7 +10,8 @@ from setuptools import setup, find_packages
 
 setup(name='ringdb',
       version='0.1.3.4',
-      #description=description.replace('\n',''),
+      long_description=open('README.md').read(),
+      long_description_content_type='text/markdown',
       author='Asad Hussain',
       author_email='asadh@utexas.edu',
       url='https://github.com/potatoasad/ringdb',
