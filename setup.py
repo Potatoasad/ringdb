@@ -9,13 +9,13 @@ from setuptools import setup, find_packages
 #detector PSDs and posterior samples - all in one place'''
 
 setup(name='ringdb',
-      version='0.1.3.4',
+      version='0.1.3.5',
       long_description=open('README.md').read(),
       long_description_content_type='text/markdown',
       author='Asad Hussain',
       author_email='asadh@utexas.edu',
       url='https://github.com/potatoasad/ringdb',
-      download_url='https://github.com/Potatoasad/ringdb/archive/refs/tags/v0.1.3.4.zip',
+      download_url='https://github.com/Potatoasad/ringdb/archive/refs/tags/v0.1.3.5.zip',
       license='MIT',
       packages=['ringdb'],
       package_data={'ringdb': ['metadb/*']},
