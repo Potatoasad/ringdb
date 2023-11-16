@@ -107,7 +107,7 @@ class PosteriorDatabase:
         if self.in_catalog(event, 'GWTC-2') or self.in_catalog(event, 'GWTC-2.1'):
             file_type = 'h5'
         elif self.in_catalog(event, 'GWTC-1'):
-            file_type = 'dat'
+            file_type = 'h5'
         else:
             file_type = 'h5'
         return file_type
