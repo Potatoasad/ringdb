@@ -2,8 +2,8 @@
 
 from setuptools import setup, find_packages
 
-with open("README.md", "r", encoding="utf-8") as fh:
-    long_description = "test"
+#with open("README.md", "r", encoding="utf-8") as fh:
+#    long_description = "test"
 
 description = '''A gravitational event database that queries and locally saves event strain samples, 
 detector PSDs and posterior samples - all in one place'''
