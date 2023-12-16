@@ -9,7 +9,7 @@ __all__ = ['Series', 'TimeSeries', 'FrequencySeries', 'Data',
 
 from pylab import *
 import scipy.signal as sig
-import lal
+#import lal
 import scipy.linalg as sl
 from scipy.interpolate import interp1d
 import scipy.signal as ss
